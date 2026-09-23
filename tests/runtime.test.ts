@@ -90,6 +90,37 @@ test("opening and active sessions receive each board message exactly once", asyn
   assert.equal(received.length, 2);
 });
 
+test("new runtimes baseline board history and only receive later posts", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "pi-swarm-runtime-board-baseline-"));
+  const cwd = join(root, "project");
+  const state = join(root, "state");
+  await mkdir(cwd);
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const author = new SwarmRuntime({ cwd, sessionId: "author", root: state, isIdle: () => true, sendMessage: () => {} });
+  await author.start();
+  await author.postBoard("s/topic/conv", "historical");
+
+  const received: any[] = [];
+  const newcomer = new SwarmRuntime({
+    cwd,
+    sessionId: "newcomer",
+    root: state,
+    baselineBoardsOnStart: true,
+    isIdle: () => true,
+    sendMessage: (message) => received.push(message),
+  });
+  t.after(async () => { await author.stop(); await newcomer.stop(); });
+  await newcomer.start();
+  assert.equal(received.length, 0);
+
+  await author.postBoard("s/topic/conv", "new update");
+  await newcomer.checkBoards();
+  assert.equal(received.length, 1);
+  assert.match(received[0].content, /new update/);
+  assert.doesNotMatch(received[0].content, /historical/);
+});
+
 test("runtime reports compact incoming and outgoing activity counts", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "pi-swarm-runtime-activity-"));
   const cwd = join(root, "project");

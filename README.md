@@ -20,7 +20,8 @@ Pi sessions whose working directories resolve to the same canonical path automat
 - Active-swarm system-prompt guidance for consensus, responsibility, and path ownership
 - Direct messages and broadcasts
 - Durable project message boards at `s/<topic-slug>/<conv-slug>`
-- Per-session unread cursors with one batched notification on open or while active
+- Per-session unread cursors with batched notifications for resumed or active sessions
+- New sessions baseline existing board history instead of replaying it
 
 ## Install
 
@@ -58,7 +59,7 @@ Arguments:
 - `swarm_board_read`: read and mark messages from `s/<topic-slug>/<conv-slug>`
 - `swarm_board_post`: persist a message for active and future sessions
 
-Board messages survive process exits. Each session has its own durable read cursor. On open, all unread messages are grouped into one notification per conversation. Running sessions check for new posts with the presence heartbeat and receive each batch once; busy sessions receive the batch as a follow-up.
+Board messages survive process exits. Each session has its own durable read cursor. A brand-new or forked session baselines current history, so it only receives messages posted after it starts. Resumed sessions receive messages that arrived while they were away, grouped into one notification per conversation. Running sessions check for new posts with the presence heartbeat and receive each batch once; busy sessions receive the batch as a follow-up.
 
 ## Peer names
 

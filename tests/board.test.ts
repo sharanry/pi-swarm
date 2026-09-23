@@ -55,6 +55,17 @@ test("a session does not receive its own posts but advances past them", async (t
   assert.deepEqual(await store.drainUnread("session-a"), []);
 });
 
+test("new sessions can baseline existing history without missing later posts", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "pi-swarm-board-baseline-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const store = new BoardStore(root, "f".repeat(64));
+  await store.post("s/topic/conv", senderA, "historical", { now: 1_000, id: "historical" });
+  await store.post("s/topic/conv", senderB, "new", { now: 2_000, id: "new" });
+  await store.markAllRead("new-session", { through: new Date(1_500).toISOString() });
+  assert.deepEqual((await store.drainUnread("new-session"))[0].messages.map((message) => message.body), ["new"]);
+  assert.deepEqual(await store.drainUnread("new-session"), []);
+});
+
 test("same-timestamp posts arriving after a cursor are not skipped", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "pi-swarm-board-boundary-"));
   t.after(() => rm(root, { recursive: true, force: true }));

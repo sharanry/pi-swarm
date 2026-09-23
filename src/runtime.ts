@@ -54,6 +54,7 @@ export class SwarmRuntime {
     heartbeatMs?: number;
     initialActivity?: SwarmActivity;
     onActivity?: (activity: SwarmActivity) => void;
+    baselineBoardsOnStart?: boolean;
   };
 
   constructor(options: {
@@ -67,6 +68,7 @@ export class SwarmRuntime {
     heartbeatMs?: number;
     initialActivity?: SwarmActivity;
     onActivity?: (activity: SwarmActivity) => void;
+    baselineBoardsOnStart?: boolean;
   }) {
     this.options = options;
     this.activity = { ...(options.initialActivity ?? { incoming: 0, outgoing: 0 }) };
@@ -80,6 +82,7 @@ export class SwarmRuntime {
 
   async start(): Promise<void> {
     if (this.started) return;
+    const boardBaseline = this.options.baselineBoardsOnStart ? new Date().toISOString() : undefined;
     this.started = true;
     try {
       this.identity = await createIdentity(this.options.cwd, this.options.sessionId, this.name);
@@ -101,6 +104,7 @@ export class SwarmRuntime {
       await this.transport.listen((envelope) => this.receiver!.accept(envelope));
       await this.writePresence();
       await this.delivery.retry({ peerId: this.identity.peerId, endpoint });
+      if (boardBaseline) await this.boards.markAllRead(this.identity.sessionId, { through: boardBaseline });
       await this.checkBoards();
       this.emitActivity();
       const interval = this.options.heartbeatMs ?? 5_000;

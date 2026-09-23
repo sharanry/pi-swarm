@@ -19,7 +19,7 @@ export default function swarmExtension(pi: ExtensionAPI): void {
     return runtime;
   };
 
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", async (event, ctx) => {
     await runtime?.stop();
     currentCtx = ctx;
     const sessionId = ctx.sessionManager.getSessionId();
@@ -32,6 +32,9 @@ export default function swarmExtension(pi: ExtensionAPI): void {
       seenIds: restoredMessageIds(ctx),
       initialActivity: restoredActivity(ctx),
       onActivity: (activity) => setSwarmStatus(ctx, sessionId, activity),
+      baselineBoardsOnStart: event.reason === "new"
+        || event.reason === "fork"
+        || (event.reason === "startup" && ctx.sessionManager.getEntries().length === 0),
     });
     try {
       await runtime.start();

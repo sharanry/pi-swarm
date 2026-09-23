@@ -125,6 +125,17 @@ export class BoardStore {
     return limit === undefined ? messages : messages.slice(-Math.max(0, limit));
   }
 
+  async markAllRead(sessionId: string, options: { through?: string } = {}): Promise<void> {
+    const addresses = await this.addresses();
+    await Promise.all(addresses.map(async (address) => {
+      const messages = await this.messages(address);
+      const baseline = options.through
+        ? messages.filter((message) => message.createdAt <= options.through!)
+        : messages;
+      await this.markRead(sessionId, address, baseline);
+    }));
+  }
+
   async drainUnread(sessionId: string): Promise<BoardThread[]> {
     const addresses = await this.addresses();
     const threads: BoardThread[] = [];

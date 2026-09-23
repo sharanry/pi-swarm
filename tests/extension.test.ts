@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { BoardStore } from "../src/board.ts";
+import { createIdentity } from "../src/identity.ts";
 import swarmExtension from "../src/index.ts";
 import { cultureName, shortIdentifier } from "../src/naming.ts";
 
@@ -18,6 +20,10 @@ test("extension registers tools and delivers between two Pi session facades", as
     if (oldRoot === undefined) delete process.env.PI_SWARM_DIR;
     else process.env.PI_SWARM_DIR = oldRoot;
   });
+
+  const seedIdentity = await createIdentity(cwd, "seed-session");
+  const seedBoards = new BoardStore(join(root, "state"), seedIdentity.swarmId);
+  await seedBoards.post("s/release/api", { peerId: "seed-peer", sessionId: "seed-session" }, "historical update");
 
   const a = fakePi("Alpha");
   const b = fakePi("Beta");
